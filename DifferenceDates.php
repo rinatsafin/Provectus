@@ -25,16 +25,18 @@ class DifferenceDates extends \stdClass
      */
     public function __construct($dateOne = false, $dateTwo = false)
     {
-        $this->dateOne = $dateOne;
-        $this->dateTwo = $dateTwo;
+        $this->dateOne = explode("-",trim($dateOne));
+        $this->dateTwo = explode("-", trim($dateTwo));
+        $this->invert = $this->checkSmallYear();
     }
 
     public function checkSmallYear() {
         if (!$this->dateOne || !$this->dateTwo) throw new Exception("Dates format is not correct! <br> Try YYYY-MM-DD");
-        $this->invert = intval(substr($this->dateOne, 0, 4)) > intval(substr($this->dateTwo, 0, 4)) ? false : true;
+        return intval($this->dateOne[0]) > intval($this->dateTwo[0]) ? false : true;
     }
 
     public function calculateDifference() {
+        $this->daysStart = $this->invert ? $this->dateTwo[0] : $this->dateOne[0];
         $this->yearsBetween;
         $this->monthsBetween;
         $this->daysBetween;
