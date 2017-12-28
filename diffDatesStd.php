@@ -1,5 +1,21 @@
 <?php
 
+try
+{
+    throw new \Exception('Testing', -12.12);
+}
+catch (\Exception $exception)
+{
+    $code = $exception->getCode();
+    if ($code < 0)
+    {
+        exit(abs($code));
+    }
+}
+
+
+die();
+
 $st = new stdClass();
 $st::_toString("tt");
 
