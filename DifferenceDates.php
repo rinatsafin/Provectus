@@ -1,7 +1,14 @@
 <?php
 /*
+ * stdClass is the default PHP object.
+ * stdClass has no properties, methods or parent.
+ * It does not support magic methods, and implements no interfaces.
+ * http://php.net/manual/en/language.oop5.basic.php#92123
+ *
  * http://php.net/manual/en/reserved.classes.php
  * http://php.net/manual/ru/datetime.diff.php
+ * http://krisjordan.com/dynamic-properties-in-php-with-stdclass
+ * http://qaru.site/questions/3420/what-is-stdclass-in-php
  * */
 class DifferenceDates
 {
@@ -17,8 +24,8 @@ class DifferenceDates
     protected $monthsBetween;
     protected $daysBetween;
     protected $totalDaysBetween;
+    protected $result;
     private $invert = false;
-
     /**
      * DifferenceDates constructor.
      * @param $dateOne
@@ -29,15 +36,18 @@ class DifferenceDates
         $this->dateOne = explode("-",trim($dateOne));
         $this->dateTwo = explode("-", trim($dateTwo));
         $this->invert = $this->checkSmallYear($dateOne, $dateTwo);
+        $this->result = $this->calculateDifference();
     }
 
     /**
+     * @param $dateOne
+     * @param $dateTwo
      * @return bool
      * @throws Exception
      */
     public function checkSmallYear($dateOne, $dateTwo)
     {
-        if (!$this->dateOne || !$this->dateTwo) throw new Exception("Dates format is not correct! <br> Try 'YYYY-MM-DD'");
+        if (!$dateOne || !$dateTwo) throw new \Exception("Dates format is not correct! <br> Try 'YYYY-MM-DD'");
         return ($dateOne > $dateTwo) || intval($this->dateOne[0]) > intval($this->dateTwo[0]) ? false : true;
     }
 
@@ -52,27 +62,34 @@ class DifferenceDates
             $this->dateOne = $this->dateTwo;
             $this->dateTwo = $tmpDate;
         }
-        $this->yearsStart = (int) $this->dateOne[0];
-        $this->yearsEnd = (int) $this->dateOne[0];
-        $this->monthsStart = strlen($this->dateOne[1]) > 2 ? (int) substr($this->dateOne[1], 0, 2) : (int) $this->dateOne[1];
-        $this->monthsEnd = strlen($this->dateTwo[1]) > 2 ? (int) substr($this->dateTwo[1], 0, 2) : (int) $this->dateTwo[1];
-        $this->daysStart = strlen($this->dateOne[2]) > 2 ? (int) substr($this->dateOne[2], 0, 2) : (int) $this->dateOne[2];
-        $this->daysEnd = strlen($this->dateTwo[2]) > 2 ? (int) substr($this->dateTwo[2], 0, 2) : (int) $this->dateTwo[2];
+        try {
+            $this->yearsStart = (int) $this->dateOne[0];
+            $this->yearsEnd = (int) $this->dateOne[0];
+            $this->monthsStart = strlen($this->dateOne[1]) > 2 ?
+                (int) substr($this->dateOne[1], 0, 2) : (int) $this->dateOne[1];
+            $this->monthsEnd = strlen($this->dateTwo[1]) > 2 ?
+                (int) substr($this->dateTwo[1], 0, 2) : (int) $this->dateTwo[1];
+            $this->daysStart = strlen($this->dateOne[2]) > 2 ?
+                (int) substr($this->dateOne[2], 0, 2) : (int) $this->dateOne[2];
+            $this->daysEnd = strlen($this->dateTwo[2]) > 2 ?
+                (int) substr($this->dateTwo[2], 0, 2) : (int) $this->dateTwo[2];
+        } catch (Exception $exception) {
+            echo $exception;
+        }
 
         if ($this->monthsStart > 12 && $this->monthsEnd > 12 && $this->daysStart > 31 && $this->daysEnd > 31) {
-            return "ERROR: NOT VALID FORMAT! TRY 'YYYY-MM-DD'";
+            return "ERROR: NOT VALID FORMAT! <br> Try: 'YYYY-MM-DD'";
         }
 
         if ($this->daysEnd > $this->daysStart) {
-            if ($this->monthsEnd > $this->monthsStart) {
-                $this->yearsBetween = --$this->yearsStart - $this->yearsEnd;
-                $this->monthsBetween = ($this->monthsStart + 12) - $this->monthsEnd;
-            }
+            $this->daysBetween = ($this->daysStart +
+                    $this->getDayInMonth(--$this->monthsStart, $this->yearsStart)) - $this->daysEnd;
+        }
+        if ($this->monthsEnd > $this->monthsStart) {
+            $this->yearsBetween = --$this->yearsStart - $this->yearsEnd;
+            $this->monthsBetween = ($this->monthsStart + 12) - $this->monthsEnd;
         }
 
-        $this->yearsBetween;
-        $this->monthsBetween;
-        $this->daysBetween;
         $this->totalDaysBetween;
     }
 
@@ -85,4 +102,13 @@ class DifferenceDates
     {
         return ((($year % 4) == 0) && ((($year % 100) != 0) || (($year % 400) == 0)));
     }
+
+    public function showResult() {
+        echo $this->result;
+    }
 }
+//class Foo{}
+//$foo = new Foo();
+//echo ($foo instanceof stdClass)?'Y':'N';
+// outputs 'N'
+$diff = new DifferenceDates("", "");
