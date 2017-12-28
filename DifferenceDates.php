@@ -12,8 +12,8 @@
  * */
 class DifferenceDates
 {
-    public $dateOne;
-    public $dateTwo;
+    public $dateFirst;
+    public $dateSecond;
     public $yearsStart;
     public $yearsEnd;
     public $monthsStart;
@@ -31,38 +31,38 @@ class DifferenceDates
     private $strRegExp = "/^[0-9]{4}-[0-1][0-9]-[0-3][0-9]$/";//[0-9]{XXX}
     /**
      * DifferenceDates constructor.
-     * @param $dateOne
-     * @param $dateTwo
+     * @param $dateFirst
+     * @param $dateSecond
      */
-    public function __construct($dateOne = false, $dateTwo = false)
+    public function __construct($dateFirst = false, $dateSecond = false)
     {
-        if (!$this->checkDates($dateOne, $dateTwo)) exit($this->strErrorMsg);
-        $this->dateOne = explode("-",trim($dateOne));
-        $this->dateTwo = explode("-", trim($dateTwo));
-        $this->invert = $this->checkSmallYear($dateOne, $dateTwo);
+        if (!$this->checkDates($dateFirst, $dateSecond)) exit($this->strErrorMsg);
+        $this->dateFirst = explode("-",trim($dateFirst));
+        $this->dateSecond = explode("-", trim($dateSecond));
+        $this->invert = $this->checkSmallYear($dateFirst, $dateSecond);
         $this->result = $this->calculateDifference();
         //$this->getResult(); // если делать extends stdClass, то в место __toString можнро использовать этот метод.
     }
 
     /**
-     * @param $dateOne
-     * @param $dateTwo
+     * @param $dateFirst
+     * @param $dateSecond
      * @return bool
      */
-    private function checkDates($dateOne, $dateTwo) {
-        if (preg_match($this->strRegExp, $dateOne) && preg_match($this->strRegExp, $dateTwo)) return true;
+    private function checkDates($dateFirst, $dateSecond) {
+        if (preg_match($this->strRegExp, $dateFirst) && preg_match($this->strRegExp, $dateSecond)) return true;
         return false;
     }
 
     /**
-     * @param $dateOne
-     * @param $dateTwo
+     * @param $dateFirst
+     * @param $dateSecond
      * @return bool
      * @throws Exception
      */
-    public function checkSmallYear($dateOne, $dateTwo)
+    public function checkSmallYear($dateFirst, $dateSecond)
     {
-        return ($dateOne > $dateTwo) || intval($this->dateOne[0]) > intval($this->dateTwo[0]) ? false : true;
+        return ($dateFirst > $dateSecond) || intval($this->dateFirst[0]) > intval($this->dateSecond[0]) ? false : true;
     }
 
     /**
@@ -72,32 +72,37 @@ class DifferenceDates
     public function calculateDifference()
     {
         if ($this->invert) {
-            $tmpDate = $this->dateOne;
-            $this->dateOne = $this->dateTwo;
-            $this->dateTwo = $tmpDate;
-        } else return $this->strErrorMsg;
+            $tmpDate = $this->dateFirst;
+            $this->dateFirst = $this->dateSecond;
+            $this->dateSecond = $tmpDate;
+        }
         try {
-            $this->yearsStart = (int) $this->dateOne[0];
-            $this->yearsEnd = (int) $this->dateOne[0];
-            $this->monthsStart = strlen($this->dateOne[1]) > 2 ?
-                (int) substr($this->dateOne[1], 0, 2) : (int) $this->dateOne[1];
-            $this->monthsEnd = strlen($this->dateTwo[1]) > 2 ?
-                (int) substr($this->dateTwo[1], 0, 2) : (int) $this->dateTwo[1];
-            $this->daysStart = strlen($this->dateOne[2]) > 2 ?
-                (int) substr($this->dateOne[2], 0, 2) : (int) $this->dateOne[2];
-            $this->daysEnd = strlen($this->dateTwo[2]) > 2 ?
-                (int) substr($this->dateTwo[2], 0, 2) : (int) $this->dateTwo[2];
+            $this->yearsStart = (int) $this->dateFirst[0];
+            $this->yearsEnd = (int) $this->dateFirst[0];
+            $this->monthsStart = strlen($this->dateFirst[1]) > 2 ?
+                (int) substr($this->dateFirst[1], 0, 2) : (int) $this->dateFirst[1];
+            $this->monthsEnd = strlen($this->dateSecond[1]) > 2 ?
+                (int) substr($this->dateSecond[1], 0, 2) : (int) $this->dateSecond[1];
+            $this->daysStart = strlen($this->dateFirst[2]) > 2 ?
+                (int) substr($this->dateFirst[2], 0, 2) : (int) $this->dateFirst[2];
+            $this->daysEnd = strlen($this->dateSecond[2]) > 2 ?
+                (int) substr($this->dateSecond[2], 0, 2) : (int) $this->dateSecond[2];
+
+            if (($this->monthsStart || $this->monthsEnd) > 12 && ($this->daysStart || $this->daysEnd) > 31) {
+                return $this->strErrorMsg;
+            }
+            if ($this->monthsStart - $this->monthsEnd <= 0) {
+                --$this->yearsStart;
+                $this->monthsStart += 12;
+            }
+            if ($this->yearsStart < 0) return "Текущая дата: " . $this->yearsStart;
+
+            if ($this->daysEnd > $this->daysStart) {
+                $this->daysBetween = ($this->daysStart +
+                        $this->getDayInMonth(--$this->monthsStart, $this->yearsStart)) - $this->daysEnd;
+            }
         } catch (Exception $e) {
             return $e;
-        }
-
-        if (($this->monthsStart || $this->monthsEnd) > 12 && ($this->daysStart || $this->daysEnd) > 31) {
-            return $this->strErrorMsg;
-        }
-
-        if ($this->daysEnd > $this->daysStart) {
-            $this->daysBetween = ($this->daysStart +
-                    $this->getDayInMonth(--$this->monthsStart, $this->yearsStart)) - $this->daysEnd;
         }
 
         if ($this->monthsEnd > $this->monthsStart) {
@@ -132,5 +137,5 @@ class DifferenceDates
 //$foo = new Foo();
 //echo ($foo instanceof stdClass)?'Y':'N';
 // outputs 'N'
-$diff = new DifferenceDates("1123", "1123");
+$diff = new DifferenceDates("1987-02-08", "1987-04-05");;
 //var_dump($diff);
