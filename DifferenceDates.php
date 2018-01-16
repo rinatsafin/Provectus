@@ -78,7 +78,7 @@ class DifferenceDates
         }
         try {
             $this->yearsStart = (int) $this->dateFirst[0];
-            $this->yearsEnd = (int) $this->dateFirst[0];
+            $this->yearsEnd = (int) $this->dateSecond[0];
             $this->monthsStart = strlen($this->dateFirst[1]) > 2 ?
                 (int) substr($this->dateFirst[1], 0, 2) : (int) $this->dateFirst[1];
             $this->monthsEnd = strlen($this->dateSecond[1]) > 2 ?
@@ -88,29 +88,30 @@ class DifferenceDates
             $this->daysEnd = strlen($this->dateSecond[2]) > 2 ?
                 (int) substr($this->dateSecond[2], 0, 2) : (int) $this->dateSecond[2];
 
-            if (($this->monthsStart || $this->monthsEnd) > 12 && ($this->daysStart || $this->daysEnd) > 31) {
+            if (($this->monthsStart || $this->monthsEnd) > 12 &&
+                ($this->daysStart || $this->daysEnd) > 31) {
                 return $this->strErrorMsg;
             }
-            if ($this->monthsStart - $this->monthsEnd <= 0) {
-                --$this->yearsStart;
-                $this->monthsStart += 12;
-            }
-            if ($this->yearsStart < 0) return "Текущая дата: " . $this->yearsStart;
+            $this->yearsBetween = $this->yearsStart - $this->yearsEnd;
+            $checkMonth = $this->yearsBetween > 0 && ($this->monthsStart - $this->monthsEnd) < 0 ? true : False;
+            var_dump($checkMonth);
+            if ($checkMonth) {
+                $this->yearsBetween =  --$this->yearsStart - $this->yearsEnd;
+                $this->monthsBetween = ($this->monthsStart + 12) - $this->monthsEnd;
+                var_dump($this->monthsBetween % 12);
+                die();
+            } else $this->monthsBetween = $this->monthsStart - $this->monthsEnd;
 
             if ($this->daysEnd > $this->daysStart) {
                 $this->daysBetween = ($this->daysStart +
                         $this->getDayInMonth(--$this->monthsStart, $this->yearsStart)) - $this->daysEnd;
             }
-        } catch (Exception $e) {
+            if ($this->yearsStart < 0) return "Текущая дата: " . $this->yearsStart;
+        } catch (\Exception $e) {
             return $e;
         }
 
-        if ($this->monthsEnd > $this->monthsStart) {
-            $this->yearsBetween = --$this->yearsStart - $this->yearsEnd;
-            $this->monthsBetween = ($this->monthsStart + 12) - $this->monthsEnd;
-        }
-
-        $this->totalDaysBetween;
+//        $this->totalDaysBetween;
     }
 
     private function getDayInMonth($month, $year)
@@ -137,5 +138,5 @@ class DifferenceDates
 //$foo = new Foo();
 //echo ($foo instanceof stdClass)?'Y':'N';
 // outputs 'N'
-$diff = new DifferenceDates("1987-02-08", "1987-04-05");;
+$diff = new DifferenceDates("0001-12-12", "0001-11-11");;
 //var_dump($diff);
