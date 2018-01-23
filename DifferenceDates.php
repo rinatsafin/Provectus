@@ -9,26 +9,34 @@
  * http://php.net/manual/ru/datetime.diff.php
  * http://krisjordan.com/dynamic-properties-in-php-with-stdclass
  * http://qaru.site/questions/3420/what-is-stdclass-in-php
+ * http://qaru.site/questions/12475/how-to-calculate-the-difference-between-two-dates-using-php
  * */
 class DifferenceDates
 {
-    public $dateFirst;
-    public $dateSecond;
-    public $yearsStart;
-    public $yearsEnd;
-    public $monthsStart;
-    public $monthsEnd;
-    public $daysStart;
-    public $daysEnd;
+    const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const DAYS_IN_MONTH_LEAP = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const MAX_MONTH = 12;// or count(self::DAYS_IN_MONTH) => 12;
+    protected $dateFirst;
+    protected $dateSecond;
+    protected $yearsStart;
+    protected $yearsEnd;
+    protected $monthsStart;
+    protected $monthsEnd;
+    protected $daysStart;
+    protected $daysEnd;
     protected $yearsBetween;
     protected $monthsBetween;
     protected $daysBetween;
     protected $totalDaysBetween;
     protected $result;
-    private $invert = false;
-    private $strErrorMsg = '<b>ERROR:</b> Dates format is not correct! <br>Try <i>YYYY-MM-DD</i>';
-    //если необходимо можно измменить год на любое кол-во символов
+    protected $invert;
+    protected $incorrectDaysCount;
+    protected $equalZero;
+    protected $checkMonthCount;
+    protected $strErrorMsg = '<b>ERROR:</b> Dates format is not correct! <br>Try <i>YYYY-MM-DD</i>';
+    //если необходимо можно измменить год{4} на любое кол-во символов
     private $strRegExp = "/^[0-9]{4}-[0-1][0-9]-[0-3][0-9]$/";//[0-9]{XXX}
+
     /**
      * DifferenceDates constructor.
      * @param $dateFirst
@@ -36,12 +44,13 @@ class DifferenceDates
      */
     public function __construct($dateFirst = false, $dateSecond = false)
     {
-        if (!$this->checkDates($dateFirst, $dateSecond)) exit($this->strErrorMsg);
-        $this->dateFirst = explode("-",trim($dateFirst));
-        $this->dateSecond = explode("-", trim($dateSecond));
-        $this->invert = $this->checkSmallYear($dateFirst, $dateSecond);
+        $this->checkFormatDates($dateFirst, $dateSecond);
+        $this->dateFirst = array_map('intval', explode("-",trim($dateFirst)));
+        $this->dateSecond = array_map('intval', explode("-", trim($dateSecond)));
+        $this->invert = $this->checkSmallerDate();
+        $this->splitDates();
         $this->result = $this->calculateDifference();
-        //$this->getResult(); // если делать extends stdClass, то в место __toString можнро использовать этот метод.
+        //$this->printResult(); // если делать extends stdClass, то в место __toString можнро использовать этот метод.
     }
 
     /**
@@ -49,69 +58,124 @@ class DifferenceDates
      * @param $dateSecond
      * @return bool
      */
-    private function checkDates($dateFirst, $dateSecond) {
-        if (preg_match($this->strRegExp, $dateFirst) && preg_match($this->strRegExp, $dateSecond)) return true;
-        return false;
-    }
-
-    /**
-     * @param $dateFirst
-     * @param $dateSecond
-     * @return bool
-     * @throws Exception
-     */
-    public function checkSmallYear($dateFirst, $dateSecond)
+    protected function checkFormatDates($dateFirst, $dateSecond)
     {
-        return ($dateFirst > $dateSecond) || intval($this->dateFirst[0]) > intval($this->dateSecond[0]) ? false : true;
+        if (preg_match($this->strRegExp, $dateFirst) && preg_match($this->strRegExp, $dateSecond)) return true;
+        $this->terminateRun();
+    }
+
+    /**
+     * @return bool
+     */
+    protected function checkSmallerDate()
+    {
+        return ($this->dateFirst[0] < $this->dateSecond[0] ||
+            $this->dateFirst[0] === $this->dateSecond[0] && $this->dateFirst[1] < $this->dateSecond[1] ||
+            $this->dateFirst[0] === $this->dateSecond[0] && $this->dateFirst[1] === $this->dateSecond[1] &&
+            $this->dateFirst[2] < $this->dateSecond[2]) ? true : false;
+    }
+
+    /**
+     * @return void
+     */
+    protected function invertDates()
+    {
+        $tmpDate = $this->dateFirst;
+        $this->dateFirst = $this->dateSecond;
+        $this->dateSecond = $tmpDate;
+    }
+
+    protected function splitDates()
+    {
+        if ($this->invert) {
+            $this->invertDates();
+        }
+        $this->yearsStart = $this->dateFirst[0];
+        $this->yearsEnd = $this->dateSecond[0];
+        $this->monthsStart = strlen($this->dateFirst[1]) > 2 ?
+            (int) substr($this->dateFirst[1], 0, 2) :
+            (int) $this->dateFirst[1];
+        $this->monthsEnd = strlen($this->dateSecond[1]) > 2 ?
+            (int) substr($this->dateSecond[1], 0, 2) :
+            (int) $this->dateSecond[1];
+        $this->daysStart = strlen($this->dateFirst[2]) > 2 ?
+            (int) substr($this->dateFirst[2], 0, 2) :
+            (int) $this->dateFirst[2];
+        $this->daysEnd = strlen($this->dateSecond[2]) > 2 ?
+            (int) substr($this->dateSecond[2], 0, 2) :
+            (int) $this->dateSecond[2];
+        $this->validator();
+    }
+
+    protected function validator()
+    {
+        $this->checkEqualZero();//set $this->equalZero
+        $this->checkMaxMonthCounts();//set $this->checkMonthCount
+        $this->checkCorrectsDaysCount();// set $this->incorrectDaysCount
+        // disable custom message
+        /*
+         if ($this->equalZero ||
+            $this->checkMonthCount ||
+            $this->incorrectDaysCount) $this->terminateRun();
+        return true; // useless, you can remove this line.
+        */
+    }
+
+    protected function checkMaxMonthCounts()
+    {
+        $this->checkMonthCount = $this->monthsStart > self::MAX_MONTH ||
+                                $this->monthsEnd > self::MAX_MONTH ? true : false;
+        // custom error message
+        if ($this->checkMonthCount) $this->terminateRun("<b>ERROR:</b> QUANTITY MONTH CAN NOT BE MORE THAN <b>12</b>");
+    }
+    protected function checkEqualZero() {
+        $this->equalZero = $this->monthsStart == 0 ||
+                            $this->monthsEnd == 0 ||
+                            $this->daysStart == 0 ||
+                            $this->daysEnd == 0 ? true : false;
+        // custom error message
+        if ($this->equalZero) $this->terminateRun("<b>ERROR:</b> DAYS OR MONTH CAN NOT BE ZERO");
+    }
+
+    protected function checkCorrectsDaysCount()
+    {
+        $startDays = $this->getDayInMonth($this->monthsStart, $this->yearsStart);
+        $endDays = $this->getDayInMonth($this->monthsEnd, $this->yearsEnd);
+        $this->incorrectDaysCount = $startDays < $this->daysStart ||
+                                    $endDays < $this->daysEnd ? true : false;
+        // custom error message
+        if ($this->incorrectDaysCount) $this->terminateRun("<b>ERROR:</b> YOU ENTERED INVALID NUMBER OF DAYS IN MONTH");
     }
 
     /**
      *
-     * @return string
+     * @return array
      */
-    public function calculateDifference()
+    protected function calculateDifference()
     {
-        if ($this->invert) {
-            $tmpDate = $this->dateFirst;
-            $this->dateFirst = $this->dateSecond;
-            $this->dateSecond = $tmpDate;
+        $this->yearsBetween = $this->yearsStart - $this->yearsEnd;
+        $this->monthsBetween = $this->monthsStart - $this->monthsEnd;
+        $checkMonth = $this->monthsStart < $this->monthsEnd ? true : False;
+        $checkDays = $this->daysStart < $this->daysEnd ? true : false;
+        if ($checkMonth) {
+            --$this->yearsBetween;
+            $this->monthsBetween += 12;
         }
-        try {
-            $this->yearsStart = (int) $this->dateFirst[0];
-            $this->yearsEnd = (int) $this->dateSecond[0];
-            $this->monthsStart = strlen($this->dateFirst[1]) > 2 ?
-                (int) substr($this->dateFirst[1], 0, 2) : (int) $this->dateFirst[1];
-            $this->monthsEnd = strlen($this->dateSecond[1]) > 2 ?
-                (int) substr($this->dateSecond[1], 0, 2) : (int) $this->dateSecond[1];
-            $this->daysStart = strlen($this->dateFirst[2]) > 2 ?
-                (int) substr($this->dateFirst[2], 0, 2) : (int) $this->dateFirst[2];
-            $this->daysEnd = strlen($this->dateSecond[2]) > 2 ?
-                (int) substr($this->dateSecond[2], 0, 2) : (int) $this->dateSecond[2];
+        if ($checkDays) {
+            $tmpMonth = $this->monthsStart;
+            $this->daysBetween = $this->daysStart + $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
+            // if (start_day + prev_month_days(28/29)) < end_day (30-31)
+            if ($this->daysBetween > $this->daysEnd) {
+                $this->daysBetween -= $this->daysEnd;
+            } else $this->daysBetween += $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
+        } else $this->daysBetween = $this->daysStart - $this->daysEnd;
 
-            if (($this->monthsStart || $this->monthsEnd) > 12 &&
-                ($this->daysStart || $this->daysEnd) > 31) {
-                return $this->strErrorMsg;
-            }
-            $this->yearsBetween = $this->yearsStart - $this->yearsEnd;
-            $checkMonth = $this->yearsBetween > 0 && ($this->monthsStart - $this->monthsEnd) < 0 ? true : False;
-            var_dump($checkMonth);
-            if ($checkMonth) {
-                $this->yearsBetween =  --$this->yearsStart - $this->yearsEnd;
-                $this->monthsBetween = ($this->monthsStart + 12) - $this->monthsEnd;
-                var_dump($this->monthsBetween % 12);
-                die();
-            } else $this->monthsBetween = $this->monthsStart - $this->monthsEnd;
-
-            if ($this->daysEnd > $this->daysStart) {
-                $this->daysBetween = ($this->daysStart +
-                        $this->getDayInMonth(--$this->monthsStart, $this->yearsStart)) - $this->daysEnd;
-            }
-            if ($this->yearsStart < 0) return "Текущая дата: " . $this->yearsStart;
-        } catch (\Exception $e) {
-            return $e;
-        }
-
-//        $this->totalDaysBetween;
+        echo "Разница в между двумя годами: " . $this->yearsBetween;
+        echo "<br>";
+        echo "Разница в месяцах: " . $this->monthsBetween;
+        echo "<br>";
+        echo "Разница в днях: " . $this->daysBetween;
+        return [];
     }
 
     private function getDayInMonth($month, $year)
@@ -124,19 +188,14 @@ class DifferenceDates
         return ((($year % 4) == 0) && ((($year % 100) != 0) || (($year % 400) == 0)));
     }
 
-    public function getResult() {
-        if (is_string($this->result)) return $this->result;
-        echo "result is not correct";
+    protected function terminateRun($message = false) {
+        exit($message ? $message : $this->strErrorMsg);
     }
 
-    public function __toString()
-    {
-        return $this->result;
+    public function printResult() {
+
     }
+
 }
-//class Foo{}
-//$foo = new Foo();
-//echo ($foo instanceof stdClass)?'Y':'N';
-// outputs 'N'
-$diff = new DifferenceDates("0001-12-12", "0001-11-11");;
-//var_dump($diff);
+$diff = new DifferenceDates("2016-02-01", "2017-02-28");
+//$diff->printResult();
