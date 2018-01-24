@@ -65,6 +65,7 @@ class DifferenceDates
     }
 
     /**
+     * array index: [0] - years / [1] - month / [2] - days
      * @return bool
      */
     protected function checkSmallerDate()
@@ -126,7 +127,7 @@ class DifferenceDates
         $this->checkMonthCount = $this->monthsStart > self::MAX_MONTH ||
                                 $this->monthsEnd > self::MAX_MONTH ? true : false;
         // custom error message
-        if ($this->checkMonthCount) $this->terminateRun("<b>ERROR:</b> QUANTITY MONTH CAN NOT BE MORE THAN <b>12</b>");
+        if ($this->checkMonthCount) $this->terminateRun("<b>ERROR:</b> Quantity month can not be more than <b>12</b>");
     }
     protected function checkEqualZero() {
         $this->equalZero = $this->monthsStart == 0 ||
@@ -134,7 +135,7 @@ class DifferenceDates
                             $this->daysStart == 0 ||
                             $this->daysEnd == 0 ? true : false;
         // custom error message
-        if ($this->equalZero) $this->terminateRun("<b>ERROR:</b> DAYS OR MONTH CAN NOT BE ZERO");
+        if ($this->equalZero) $this->terminateRun("<b>ERROR:</b> Days or month can not be zero");
     }
 
     protected function checkCorrectsDaysCount()
@@ -144,7 +145,7 @@ class DifferenceDates
         $this->incorrectDaysCount = $startDays < $this->daysStart ||
                                     $endDays < $this->daysEnd ? true : false;
         // custom error message
-        if ($this->incorrectDaysCount) $this->terminateRun("<b>ERROR:</b> YOU ENTERED INVALID NUMBER OF DAYS IN MONTH");
+        if ($this->incorrectDaysCount) $this->terminateRun("<b>ERROR:</b> You entered invalid number of days in the month");
     }
 
     /**
@@ -155,24 +156,31 @@ class DifferenceDates
     {
         $this->yearsBetween = $this->yearsStart - $this->yearsEnd;
         $this->monthsBetween = $this->monthsStart - $this->monthsEnd;
+        $this->daysBetween = $this->daysStart - $this->daysEnd;
         $checkMonth = $this->monthsStart < $this->monthsEnd ? true : False;
         $checkDays = $this->daysStart < $this->daysEnd ? true : false;
+
         if ($checkMonth) {
             --$this->yearsBetween;
             $this->monthsBetween += 12;
         }
+
         if ($checkDays) {
             $tmpMonth = $this->monthsStart;
-            $this->daysBetween = $this->daysStart + $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
+            $this->daysBetween += $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
             // if (start_day + prev_month_days(28/29)) < end_day (30-31)
-            if ($this->daysBetween > $this->daysEnd) {
-                $this->daysBetween -= $this->daysEnd;
-            } else $this->daysBetween += $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
-        } else $this->daysBetween = $this->daysStart - $this->daysEnd;
+            if ($this->daysBetween < $this->daysEnd) {
+                $this->daysBetween += $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
+            }
+        }
+        if ($this->yearsBetween > 0) {
+//           echo "this";
+//           die();
+        }
 
-        echo "Разница в между двумя годами: " . $this->yearsBetween;
+        echo "Разница лет между одной датой и другой: " . $this->yearsBetween;
         echo "<br>";
-        echo "Разница в месяцах: " . $this->monthsBetween;
+        echo "Разница в месяцах между двумя датами: " . $this->monthsBetween;
         echo "<br>";
         echo "Разница в днях: " . $this->daysBetween;
         return [];
@@ -197,5 +205,5 @@ class DifferenceDates
     }
 
 }
-$diff = new DifferenceDates("2016-02-01", "2017-02-28");
+$diff = new DifferenceDates("2016-12-31", "2017-02-28");
 //$diff->printResult();
