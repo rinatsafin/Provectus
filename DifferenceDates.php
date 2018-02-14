@@ -5,6 +5,14 @@
  * It does not support magic methods, and implements no interfaces.
  * http://php.net/manual/en/language.oop5.basic.php#92123
  *
+ * stdClass Создается приведением типа к объекту.
+ * http://php.net/manual/ru/language.types.object.php#language.types.object.casting
+ * Если object преобразуется в object, он не изменяется.
+ * Если значение другого типа преобразуется в object, создается новый экземпляр встроенного класса stdClass.
+ * Если значение было NULL, новый экземпляр будет пустым. Массивы преобразуются в object с именами полей,
+ * названными согласно ключам массива и соответствующими им значениям, за исключением числовых ключей,
+ * которые не будут доступны пока не проитерировать объект.
+ *
  * http://php.net/manual/en/reserved.classes.php
  * http://php.net/manual/ru/datetime.diff.php
  * http://krisjordan.com/dynamic-properties-in-php-with-stdclass
@@ -76,9 +84,6 @@ class DifferenceDates
             $this->dateFirst[2] < $this->dateSecond[2]) ? true : false;
     }
 
-    /**
-     * @return void
-     */
     protected function invertDates()
     {
         $tmpDate = $this->dateFirst;
@@ -105,14 +110,14 @@ class DifferenceDates
         $this->daysEnd = strlen($this->dateSecond[2]) > 2 ?
             (int) substr($this->dateSecond[2], 0, 2) :
             (int) $this->dateSecond[2];
-        $this->validator();
+        $this->datesVerification();
     }
 
-    protected function validator()
+    protected function datesVerification()
     {
-        $this->checkEqualZero();//set $this->equalZero
-        $this->checkMaxMonthCounts();//set $this->checkMonthCount
-        $this->checkCorrectsDaysCount();// set $this->incorrectDaysCount
+        $this->checkEqualZero();
+        $this->checkMaxMonthCounts();
+        $this->checkCorrectsDaysCount();
         // disable custom message
         /*
          if ($this->equalZero ||
@@ -126,25 +131,23 @@ class DifferenceDates
     {
         $this->checkMonthCount = $this->monthsStart > self::MAX_MONTH ||
                                 $this->monthsEnd > self::MAX_MONTH ? true : false;
-        // custom error message
         if ($this->checkMonthCount) $this->terminateRun("<b>ERROR:</b> Quantity month can not be more than <b>12</b>");
     }
+
     protected function checkEqualZero() {
         $this->equalZero = $this->monthsStart == 0 ||
                             $this->monthsEnd == 0 ||
                             $this->daysStart == 0 ||
                             $this->daysEnd == 0 ? true : false;
-        // custom error message
         if ($this->equalZero) $this->terminateRun("<b>ERROR:</b> Days or month can not be zero");
     }
 
     protected function checkCorrectsDaysCount()
     {
-        $startDays = $this->getDayInMonth($this->monthsStart, $this->yearsStart);
-        $endDays = $this->getDayInMonth($this->monthsEnd, $this->yearsEnd);
+        $startDays = $this->getDaysCountOfMonth($this->monthsStart, $this->yearsStart);
+        $endDays = $this->getDaysCountOfMonth($this->monthsEnd, $this->yearsEnd);
         $this->incorrectDaysCount = $startDays < $this->daysStart ||
                                     $endDays < $this->daysEnd ? true : false;
-        // custom error message
         if ($this->incorrectDaysCount) $this->terminateRun("<b>ERROR:</b> You entered invalid number of days in the month");
     }
 
@@ -155,38 +158,16 @@ class DifferenceDates
     protected function calculateDifference()
     {
         $this->yearsBetween = $this->yearsStart - $this->yearsEnd;
-        $this->monthsBetween = $this->monthsStart - $this->monthsEnd;
-        $this->daysBetween = $this->daysStart - $this->daysEnd;
         $checkMonth = $this->monthsStart < $this->monthsEnd ? true : False;
-        $checkDays = $this->daysStart < $this->daysEnd ? true : false;
-
-        if ($checkMonth) {
-            --$this->yearsBetween;
-            $this->monthsBetween += 12;
+        if ($this->daysStart < $this->daysEnd) {
+            $tmpEndMonth = $this->monthsEnd - 1;
+            // $tmpEndMonth > 0
+            // $monthBetweenPart = (self::MAX_MONTH - $this->monthsStart) + $tmpEndMonth;
         }
-
-        if ($checkDays) {
-            $tmpMonth = $this->monthsStart;
-            $this->daysBetween += $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
-            // if (start_day + prev_month_days(28/29)) < end_day (30-31)
-            if ($this->daysBetween < $this->daysEnd) {
-                $this->daysBetween += $this->getDayInMonth(--$tmpMonth, $this->yearsStart);
-            }
-        }
-        if ($this->yearsBetween > 0) {
-//           echo "this";
-//           die();
-        }
-
-        echo "Разница лет между одной датой и другой: " . $this->yearsBetween;
-        echo "<br>";
-        echo "Разница в месяцах между двумя датами: " . $this->monthsBetween;
-        echo "<br>";
-        echo "Разница в днях: " . $this->daysBetween;
         return [];
     }
 
-    private function getDayInMonth($month, $year)
+    private function getDaysCountOfMonth($month, $year)
     {
         return $month == 2 ? ($year % 4 ? 28 : ($year % 100 ? 29 : ($year %400 ? 28 : 29))) : (($month - 1) % 7 % 2 ? 30 : 31);
     }
@@ -200,10 +181,16 @@ class DifferenceDates
         exit($message ? $message : $this->strErrorMsg);
     }
 
-    public function printResult() {
-
+    public function showResult()
+    {
     }
 
 }
-$diff = new DifferenceDates("2016-12-31", "2017-02-28");
-//$diff->printResult();
+$diff = new DifferenceDates("2016-01-31", "2018-02-28");
+//$diff->showResult();
+
+//http://php.net/manual/ru/datetime.diff.php
+//$datetime1 = new DateTime('2009-10-11');
+//$datetime2 = new DateTime('2009-10-13');
+//$interval = $datetime1->diff($datetime2);
+//echo $interval->format('%R%a дней');
