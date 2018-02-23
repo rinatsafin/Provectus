@@ -165,7 +165,19 @@ class DifferenceDates
         $checkMonth = $this->monthsStart > $this->monthsEnd ? true : False;
         $checkDays = $this->daysStart > $this->daysEnd ? true : false;
         if ($checkMonth) {
-            $this->monthsBetween = self::MAX_MONTHS_COUNT - ($this->monthsStart + ($this->monthsStart === 1 ? 1 : 0));
+            $this->monthsBetween = self::MAX_MONTHS_COUNT - $this->monthsStart;
+            if ($this->monthsEnd === 1) {
+                $bufferDays = $this->getDaysCountOfMonth(self::MAX_MONTHS_COUNT, $this->yearsStart);
+                $daysEndMonth = $this->getDaysCountOfMonth($this->daysEnd, $this->yearsEnd);
+                $this->monthsBetween -= 1;
+                $this->daysBetween = $bufferDays - $this->daysEnd;
+                if ($this->daysBetween > $daysEndMonth) {
+                    ++$this->monthsBetween;
+                    $this->daysBetween -= $daysEndMonth;
+                }
+            }
+            $this->monthsBetween += $this->monthsEnd;
+
             $tmpMonths = $this->monthsEnd > 1 ? $this->monthsEnd - 1 : $this->monthsEnd;
             die();
             $days = $this->getDaysCountOfMonth($tmpMonths, $this->monthsEnd);
