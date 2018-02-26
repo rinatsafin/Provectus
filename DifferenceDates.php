@@ -18,6 +18,12 @@
  * http://krisjordan.com/dynamic-properties-in-php-with-stdclass
  * http://qaru.site/questions/3420/what-is-stdclass-in-php
  * http://qaru.site/questions/12475/how-to-calculate-the-difference-between-two-dates-using-php
+ *
+ *
+ * https://planetcalc.ru/273/?license=1
+ *
+ * http://www.calculator888.ru/skolko-dnei/
+ *
  * */
 class DifferenceDates
 {
@@ -39,7 +45,7 @@ class DifferenceDates
     protected $yearsBetween;
     protected $monthsBetween;
     protected $daysBetween;
-    protected $totalDaysBetween;
+    protected $totalDaysBetween = 0;
     protected $result;
     protected $invert;
     protected $incorrectDaysCount;
@@ -162,28 +168,48 @@ class DifferenceDates
     protected function calculateDifference()
     {
         $this->yearsBetween = $this->yearsEnd - $this->yearsStart;
-        $checkMonth = $this->monthsStart > $this->monthsEnd ? true : False;
-        $checkDays = $this->daysStart > $this->daysEnd ? true : false;
-        if ($checkMonth) {
-            $this->monthsBetween = self::MAX_MONTHS_COUNT - $this->monthsStart;
-            if ($this->monthsEnd === 1) {
-                $bufferDays = $this->getDaysCountOfMonth(self::MAX_MONTHS_COUNT, $this->yearsStart);
-                $daysEndMonth = $this->getDaysCountOfMonth($this->daysEnd, $this->yearsEnd);
-                $this->monthsBetween -= 1;
-                $this->daysBetween = $bufferDays - $this->daysEnd;
-                if ($this->daysBetween > $daysEndMonth) {
-                    ++$this->monthsBetween;
-                    $this->daysBetween -= $daysEndMonth;
-                }
-            }
-            $this->monthsBetween += $this->monthsEnd;
-
-            $tmpMonths = $this->monthsEnd > 1 ? $this->monthsEnd - 1 : $this->monthsEnd;
-            die();
-            $days = $this->getDaysCountOfMonth($tmpMonths, $this->monthsEnd);
+        $checkMonth = $this->monthsStart > $this->monthsEnd;
+        $checkDays = $this->daysStart < $this->daysEnd;
+        $bufferDays = $this->getDaysCountOfMonth($this->monthsStart, $this->yearsStart);
+        $this->monthsBetween = $checkMonth ? self::MAX_MONTHS_COUNT - $this->monthsStart + $this->monthsEnd : $this->monthsEnd - $this->monthsStart;
+        if ($this->daysStart ===  $this->daysEnd) {
+          $this->daysBetween = 0;
+           ++$this->monthsBetween;//добавочный месяц
         } else {
-
+          if ($checkDays) {
+            ++$this->monthsBetween;
+            $this->daysBetween = $this->daysEnd - $this->daysStart;
+          } else {
+            // в этом месте нужно уточить допустимо ли полученное число дней разбивать на полные месяцы?
+            // пример: число дней с 01 января до 02 февраля (31 день в месяце - 01 число) + 02 число февраля === 32 дня что больше чем 28-29 дней
+            // значит можно сказать что разница в днях между 01 января и 02 ферваля либо 32 дня либо 1 месяц и 4 дня
+            $this->daysBetween = ($bufferDays - $this->daysStart) + $this->daysEnd;
+            $countDaysEndMonth = $this->getDaysCountOfMonth($this->monthsEnd, $this->yearsEnd);
+            if ($this->daysBetween >= $countDaysEndMonth) {
+              $secondDaysCount = $this->daysBetween - $countDaysEndMonth;
+              $secondMonthCount = $this->monthsBetween + 1;
+            }
+          }
         }
+        if ($this->monthsBetween >= 12) {
+          $this->monthsBetween -= self::MAX_MONTHS_COUNT;
+          ++$this->yearsBetween;
+        }
+        for ($i = 0; $i >= $this->yearsBetween; $i++) {
+          $checkLeap = $this->isLeapYear($this->yearsStart + $i);
+          $this->totalDaysBetween += $checkLeap ? 366 : 365;
+        }
+        printf("%d" . (($this->yearsBetween == 1) ? ' year' : ' years') .
+          ", %d " . (($this->monthsBetween == 1) ? ' month' : ' months') .
+          ", %d " . (($this->daysBetween == 1) ? ' day' : ' days' . "<br>"), $this->yearsBetween, $this->monthsBetween, $this->daysBetween);
+        echo "Количество лет между датами: " . $this->yearsBetween;
+        echo "<br>";
+        echo "Количество месяцев между датами: " . $this->monthsBetween;
+        echo "<br>";
+        echo "Количество дней между датами: " . $this->daysBetween;
+        echo "<br>";
+        echo "Общее количество дней между датами: " . $this->totalDaysBetween;
+
         return [];
     }
 
