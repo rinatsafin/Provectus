@@ -168,6 +168,7 @@ class DifferenceDates
     protected function calculateDifference()
     {
         $this->yearsBetween = $this->yearsEnd - $this->yearsStart;
+        if ($this->daysStart > $this->daysEnd || $this->monthsStart > $this->monthsEnd) --$this->yearsBetween;
         $checkMonth = $this->monthsStart > $this->monthsEnd;
         $checkDays = $this->daysStart < $this->daysEnd;
         $bufferDays = $this->getDaysCountOfMonth($this->monthsStart, $this->yearsStart);
@@ -180,9 +181,6 @@ class DifferenceDates
             ++$this->monthsBetween;
             $this->daysBetween = $this->daysEnd - $this->daysStart;
           } else {
-            // в этом месте нужно уточить допустимо ли полученное число дней разбивать на полные месяцы?
-            // пример: число дней с 01 января до 02 февраля (31 день в месяце - 01 число) + 02 число февраля === 32 дня что больше чем 28-29 дней
-            // значит можно сказать что разница в днях между 01 января и 02 ферваля либо 32 дня либо 1 месяц и 4 дня
             $this->daysBetween = ($bufferDays - $this->daysStart) + $this->daysEnd;
             $countDaysEndMonth = $this->getDaysCountOfMonth($this->monthsEnd, $this->yearsEnd);
             if ($this->daysBetween >= $countDaysEndMonth) {
@@ -191,13 +189,16 @@ class DifferenceDates
             }
           }
         }
-        if ($this->monthsBetween >= 12) {
+        if ($this->monthsBetween >= self::MAX_MONTHS_COUNT) {
           $this->monthsBetween -= self::MAX_MONTHS_COUNT;
           ++$this->yearsBetween;
         }
-        for ($i = 0; $i >= $this->yearsBetween; $i++) {
-          $checkLeap = $this->isLeapYear($this->yearsStart + $i);
-          $this->totalDaysBetween += $checkLeap ? 366 : 365;
+        $totalYears = $this->yearsBetween;
+        $this->totalDaysBetween += $this->daysBetween;
+        while ($totalYears) {
+            $checkLeap = $this->isLeapYear($this->yearsStart + $totalYears--);
+            if ($checkLeap) $this->totalDaysBetween += 366;
+            else $this->totalDaysBetween += 365;
         }
         printf("%d" . (($this->yearsBetween == 1) ? ' year' : ' years') .
           ", %d " . (($this->monthsBetween == 1) ? ' month' : ' months') .
@@ -232,7 +233,7 @@ class DifferenceDates
     }
 
 }
-$diff = new DifferenceDates("2016-04-30", "2018-02-28");
+$diff = new DifferenceDates("1987-04-05", "2018-02-27");
 //$diff->showResult();
 
 //http://php.net/manual/ru/datetime.diff.php
