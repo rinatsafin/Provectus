@@ -168,19 +168,17 @@ class DifferenceDates
     protected function calculateDifference()
     {
         $this->yearsBetween = $this->yearsEnd - $this->yearsStart;
-        if ($this->daysStart > $this->daysEnd || $this->monthsStart > $this->monthsEnd) --$this->yearsBetween;
         $checkMonth = $this->monthsStart > $this->monthsEnd;
         $checkDays = $this->daysStart < $this->daysEnd;
-        $bufferDays = $this->getDaysCountOfMonth($this->monthsStart, $this->yearsStart);
+        if (($this->daysStart > $this->daysEnd && $checkMonth) || $checkMonth) --$this->yearsBetween;
         $this->monthsBetween = $checkMonth ? self::MAX_MONTHS_COUNT - $this->monthsStart + $this->monthsEnd : $this->monthsEnd - $this->monthsStart;
         if ($this->daysStart ===  $this->daysEnd) {
           $this->daysBetween = 0;
-           ++$this->monthsBetween;//добавочный месяц
         } else {
           if ($checkDays) {
-            ++$this->monthsBetween;
             $this->daysBetween = $this->daysEnd - $this->daysStart;
           } else {
+            $bufferDays = $this->getDaysCountOfMonth($this->monthsStart, $this->yearsStart);
             $this->daysBetween = ($bufferDays - $this->daysStart) + $this->daysEnd;
             $countDaysEndMonth = $this->getDaysCountOfMonth($this->monthsEnd, $this->yearsEnd);
             if ($this->daysBetween >= $countDaysEndMonth) {
@@ -210,7 +208,11 @@ class DifferenceDates
         echo "Количество дней между датами: " . $this->daysBetween;
         echo "<br>";
         echo "Общее количество дней между датами: " . $this->totalDaysBetween;
-
+        if(isset($secondDaysCount))
+            echo "В этом случае сумма дней двух месяце равны полному числу дней в месяце: " . $secondDaysCount . "<br>";
+        if (isset($secondMonthCount))
+            echo "В этом случае из общего числа дней вычитается число дней в месяце, а месяц прибавляется к числу дней: " .
+                $secondMonthCount . "<br>";
         return [];
     }
 
@@ -233,7 +235,7 @@ class DifferenceDates
     }
 
 }
-$diff = new DifferenceDates("1987-04-05", "2018-02-27");
+$diff = new DifferenceDates("2014-12-31", "2018-01-31");
 //$diff->showResult();
 
 //http://php.net/manual/ru/datetime.diff.php
