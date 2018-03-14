@@ -155,8 +155,8 @@ class DifferenceDates
 
     protected function checkCorrectsDaysCount()
     {
-        $startDays = $this->getDaysCountOfMonth($this->monthsStart, $this->yearsStart);
-        $endDays = $this->getDaysCountOfMonth($this->monthsEnd, $this->yearsEnd);
+        $startDays = $this->getDaysPerMonth($this->monthsStart, $this->yearsStart);
+        $endDays = $this->getDaysPerMonth($this->monthsEnd, $this->yearsEnd);
         $this->incorrectDaysCount = $startDays < $this->daysStart ||
                                     $endDays < $this->daysEnd ? true : false;
         if ($this->incorrectDaysCount) $this->terminateRun("<b>ERROR:</b> You entered invalid number of days in the month");
@@ -182,13 +182,13 @@ class DifferenceDates
             if ($checkDays) {
                 $this->daysBetween = $this->dateEnd - $this->daysStart;
             } else {
-                $bufferDays = $this->getDaysCountOfMonth($this->monthsStart, $this->yearsStart);
+                $bufferDays = $this->getDaysPerMonth($this->monthsStart, $this->yearsStart);
                 $this->daysBetween = $bufferDays - $this->daysStart + $this->daysEnd;
                 --$this->monthsBetween;
                 if ($this->monthsBetween < 0) {
                     --$this->yearsBetween;
                     $this->monthsBetween += self::MAX_MONTHS_COUNT;
-                    $lastMonthDaysCount = $this->getDaysCountOfMonth($this->monthsEnd - 1, $this->yearsEnd - 1);
+                    $lastMonthDaysCount = $this->getDaysPerMonth($this->monthsEnd - 1, $this->yearsEnd - 1);
                     //TODO: complete this context
 //                    $this->daysBetween =
                 }
@@ -206,7 +206,7 @@ class DifferenceDates
         }
 
 //        if (($this->monthsBetween === 1) && ($this->monthsEnd === 1 && !$checkDays)) --$this->monthsBetween;
-        /*$countDaysEndMonth = $this->getDaysCountOfMonth($this->monthsEnd, $this->yearsEnd);
+        /*$countDaysEndMonth = $this->getDaysPerMonth($this->monthsEnd, $this->yearsEnd);
         if ($this->daysBetween >= $countDaysEndMonth) {
             $secondDaysCount = $this->daysBetween - $countDaysEndMonth;
             $secondMonthCount = $this->monthsBetween + 1;
@@ -242,7 +242,7 @@ class DifferenceDates
         return [];
     }
 
-    private function getDaysCountOfMonth($month, $year)
+    private function getDaysPerMonth($month, $year)
     {
         return $month == 2 ? ($year % 4 ? 28 : ($year % 100 ? 29 : ($year %400 ? 28 : 29))) : (($month - 1) % 7 % 2 ? 30 : 31);
     }
