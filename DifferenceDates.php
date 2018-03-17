@@ -228,7 +228,7 @@ class DifferenceDates
         printf("Inverting dates is %s <br/>", $this->invert ? "true" : "false");
         echo "Difference between dates " . $years . " " . $months . " " . $days . "<br/>";
         echo "Total days count between dates " . $result["totalDays"] . "<br/>";
-        echo "From check result click to link: <a target='_blank' href='https://planetcalc.ru/273/?license=1'>check dates online</a>";
+        echo "From check result click to link: <a target='_blank' href='https://planetcalc.ru/273/?license=1'>diff dates online</a>";
     }
 
 }
